@@ -242,6 +242,7 @@ def emprestimos():
     
 def buscar_emprestimos():
     try:
+        
         emprestimos = list(mongo.db.bicicletas.find({ 'status': 'em uso' }))
         for emprestimo in emprestimos:
             emprestimo['_id'] = str(emprestimo['_id'])
