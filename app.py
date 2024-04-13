@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from urllib.parse import quote_plus
-from bson import ObjectId, InvalidId
+from bson.objectid import ObjectId
+from bson.errors import InvalidId
 import datetime
 
 app = Flask(__name__)
@@ -45,22 +46,30 @@ def criar_usuario():
         data_nascimento = data.get('data_nascimento', None)
 
         if not nome:
-            return jsonify({ 'mensagem': 'Nome é obrigatório' }), 400
+            return jsonify({'mensagem': 'Nome é obrigatório'}), 400
         if not cpf or cpf == '':
-            return jsonify({ 'mensagem': 'CPF é obrigatório' }), 400
+            return jsonify({'mensagem': 'CPF é obrigatório'}), 400
         if not data_nascimento:
-            return jsonify({ 'mensagem': 'Data de nascimento é obrigatório' }), 400
+            return jsonify({'mensagem': 'Data de nascimento é obrigatório'}), 400
+        
+        usuario = mongo.db.usuarios.find_one({ 'cpf': cpf })
+        if usuario:
+            return jsonify({'mensagem': 'CPF já cadastrado'}), 400
         
         usuario = {
             'nome': nome,
             'cpf': cpf,
             'data_nascimento': data_nascimento
         }
-        mongo.db.usuarios.insert_one(usuario)
-        return jsonify(usuario)
+
+        resultado = mongo.db.usuarios.insert_one(usuario)
+
+        usuario['_id'] = str(resultado.inserted_id)
+
+        return jsonify(usuario), 201
     except Exception as error:
         print(error)
-        return jsonify({ 'mensagem': 'Erro interno ao criar usuário' }), 500
+        return jsonify({'mensagem': 'Erro interno ao criar usuário'}), 500
     
 @app.route('/usuarios/<id_usuario>', methods=['GET', 'PUT', 'DELETE'])
 def usuario(id_usuario):
@@ -103,6 +112,7 @@ def atualizar_usuario(id_usuario):
                 return jsonify({ 'mensagem': f'Campo {chave} não existe' }), 400
         
         mongo.db.usuarios.update_one({ '_id': id_usuario }, { '$set': usuario })
+        usuario['_id'] = str(usuario['_id'])
         return jsonify(usuario)
     except InvalidId:
         return jsonify({ 'mensagem': 'ID inválido' }), 400
@@ -118,7 +128,7 @@ def deletar_usuario(id_usuario):
             return jsonify({ 'mensagem': 'Usuário não encontrado' }), 404
         
         mongo.db.usuarios.delete_one({ '_id': id_usuario })
-        return jsonify({ 'mensagem': 'Usuário deletado com sucesso' })
+        return jsonify({}), 204
     except InvalidId:
         return jsonify({ 'mensagem': 'ID inválido' }), 400
     except Exception as error:
@@ -164,8 +174,9 @@ def criar_bike():
             'status': status
         }
 
-        mongo.db.bicicletas.insert_one(bike)
-        return jsonify(bike)
+        resultado = mongo.db.bicicletas.insert_one(bike)
+        bike['_id'] = str(resultado.inserted_id)
+        return jsonify(bike), 201
     except Exception as error:
         print(error)
         return jsonify({ 'mensagem': 'Erro interno ao criar bicicleta' }), 500
@@ -211,6 +222,7 @@ def atualizar_bike(id_bike):
                 return jsonify({ 'mensagem': f'Campo {chave} não existe' }), 400
         
         mongo.db.bicicletas.update_one({ '_id': id_bike }, { '$set': bike })
+        bike['_id'] = str(bike['_id'])
         return jsonify(bike)
     except InvalidId:
         return jsonify({ 'mensagem': 'ID inválido' }), 400
@@ -226,7 +238,7 @@ def deletar_bike(id_bike):
             return jsonify({ 'mensagem': 'Bicicleta não encontrada' }), 404
         
         mongo.db.bicicletas.delete_one({ '_id': id_bike })
-        return jsonify({ 'mensagem': 'Bicicleta deletada com sucesso' })
+        return jsonify({}), 204
     except InvalidId:
         return jsonify({ 'mensagem': 'ID inválido' }), 400
     except Exception as error:
@@ -242,11 +254,15 @@ def emprestimos():
     
 def buscar_emprestimos():
     try:
-        
         emprestimos = list(mongo.db.bicicletas.find({ 'status': 'em uso' }))
+        emprestimos_final = []
         for emprestimo in emprestimos:
-            emprestimo['_id'] = str(emprestimo['_id'])
-        return jsonify(emprestimos)
+            emp = emprestimo['emprestimo']
+            emp['_id'] = str(emp['_id'])
+            emp['id_usuario'] = str(emp['id_usuario'])
+            emp['id_bike'] = str(emprestimo['_id'])
+            emprestimos_final.append(emp)
+        return jsonify(emprestimos_final)
     except Exception as error:
         print(error)
         return jsonify({ 'mensagem': 'Erro interno ao buscar empréstimos' }), 500
@@ -256,7 +272,7 @@ def criar_emprestimo():
         data = request.get_json()
         id_usuario = data.get('id_usuario', None)
         id_bike = data.get('id_bike', None)
-        data_emprestimo = data.get('data_emprestimo', datetime.datetime.now())
+        data_emprestimo = data.get('data_emprestimo', datetime.date.today().strftime('%d/%m/%Y'))
 
         if not id_usuario:
             return jsonify({ 'mensagem': 'ID do usuário é obrigatório' }), 400
@@ -274,7 +290,7 @@ def criar_emprestimo():
         if not bike:
             return jsonify({ 'mensagem': 'Bicicleta não encontrada' }), 404
         
-        if bike['status'] == 'em uso':
+        if bike['status'] == 'em uso' or 'emprestimo' in bike:
             return jsonify({ 'mensagem': 'Bicicleta já está em uso' }), 400
         
         bike['status'] = 'em uso'
@@ -289,12 +305,68 @@ def criar_emprestimo():
         usuario['emprestimos'].append(bike['emprestimo']['_id'])
         mongo.db.bicicletas.update_one({ '_id': id_bike }, { '$set': bike })
         mongo.db.usuarios.update_one({ '_id': id_usuario }, { '$set': usuario })
+        bike['emprestimo']['_id'] = str(bike['emprestimo']['_id'])
         return jsonify(bike['emprestimo'])
     except InvalidId:
         return jsonify({ 'mensagem': 'ID inválido' }), 400
     except Exception as error:
         print(error)
         return jsonify({ 'mensagem': 'Erro interno ao criar empréstimo' }), 500
+    
+@app.route('/emprestimos/<id_emprestimo>', methods=['GET', 'DELETE'])
+def emprestimo(id_emprestimo):
+    if request.method == 'GET':
+        return buscar_emprestimo(id_emprestimo)
+    elif request.method == 'DELETE':
+        return deletar_emprestimo(id_emprestimo)
+    
+def buscar_emprestimo(id_emprestimo):
+    try:
+        id_emprestimo = ObjectId(id_emprestimo)
+        emprestimo = mongo.db.bicicletas.find_one({ 'emprestimo._id': id_emprestimo })
+        if not emprestimo:
+            return jsonify({ 'mensagem': 'Empréstimo não encontrado' }), 404
+        
+        emprestimo['emprestimo']['_id'] = str(emprestimo['emprestimo']['_id'])
+        emprestimo['emprestimo']['id_usuario'] = str(emprestimo['emprestimo']['id_usuario'])
+        emprestimo['emprestimo']['id_bike'] = str(emprestimo['_id'])
+        return jsonify(emprestimo['emprestimo'])
+    except InvalidId:
+        return jsonify({ 'mensagem': 'ID inválido' }), 400
+    except Exception as error:
+        print(error)
+        return jsonify({ 'mensagem': 'Erro interno ao buscar empréstimo' }), 500
+    
+def deletar_emprestimo(id_emprestimo):
+    try:
+        id_emprestimo = ObjectId(id_emprestimo)
+        emprestimo = mongo.db.bicicletas.find_one({ 'emprestimo._id': id_emprestimo })
+        if not emprestimo:
+            return jsonify({ 'mensagem': 'Empréstimo não encontrado' }), 404
+        
+        id_usuario = emprestimo['emprestimo']['id_usuario']
+        id_bike = emprestimo['_id']
+
+        usuario = mongo.db.usuarios.find_one({ '_id': id_usuario })
+        if not usuario:
+            return jsonify({ 'mensagem': 'Usuário não encontrado' }), 404
+        
+        bike = mongo.db.bicicletas.find_one({ '_id': id_bike })
+        if not bike:
+            return jsonify({ 'mensagem': 'Bicicleta não encontrada' }), 404
+        
+        bike['status'] = 'disponivel'
+        bike.pop('emprestimo')
+        usuario['emprestimos'].remove(id_emprestimo)
+
+        mongo.db.bicicletas.update_one({ '_id': id_bike }, { '$set': bike })
+        mongo.db.usuarios.update_one({ '_id': id_usuario }, { '$set': usuario })
+        return jsonify({}), 204
+    except InvalidId:
+        return jsonify({ 'mensagem': 'ID inválido' }), 400
+    except Exception as error:
+        print(error)
+        return jsonify({ 'mensagem': 'Erro interno ao deletar empréstimo' }), 500
 
 if __name__ == '__main__':
     criar_tabels()
