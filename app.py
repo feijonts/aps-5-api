@@ -360,7 +360,10 @@ def deletar_emprestimo(id_emprestimo):
         
         bike['status'] = 'disponivel'
         del bike['emprestimo']
-        del usuario['emprestimos'][usuario['emprestimos'].index(id_emprestimo)]
+        for index, emp in enumerate(usuario['emprestimos']):
+            if emp == id_emprestimo:
+                del usuario['emprestimos'][index]
+                break
 
         mongo.db.bicicletas.update_one({ '_id': id_bike }, { '$set': bike })
         mongo.db.usuarios.update_one({ '_id': id_usuario }, { '$set': usuario })
