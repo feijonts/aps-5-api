@@ -307,6 +307,8 @@ def criar_emprestimo():
         mongo.db.bicicletas.update_one({ '_id': id_bike }, { '$set': bike })
         mongo.db.usuarios.update_one({ '_id': id_usuario }, { '$set': usuario })
         bike['emprestimo']['_id'] = str(bike['emprestimo']['_id'])
+        bike['emprestimo']['id_usuario'] = str(bike['emprestimo']['id_usuario'])
+        bike['emprestimo']['id_bike'] = str(id_bike)
         return jsonify(bike['emprestimo'])
     except InvalidId:
         return jsonify({ 'mensagem': 'ID inválido' }), 400
