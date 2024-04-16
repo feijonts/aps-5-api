@@ -309,7 +309,7 @@ def criar_emprestimo():
         bike['emprestimo']['_id'] = str(bike['emprestimo']['_id'])
         bike['emprestimo']['id_usuario'] = str(bike['emprestimo']['id_usuario'])
         bike['emprestimo']['id_bike'] = str(id_bike)
-        return jsonify(bike['emprestimo'])
+        return jsonify(bike['emprestimo']), 201
     except InvalidId:
         return jsonify({ 'mensagem': 'ID inválido' }), 400
     except Exception as error:
@@ -333,7 +333,7 @@ def buscar_emprestimo(id_emprestimo):
         emprestimo['emprestimo']['_id'] = str(emprestimo['emprestimo']['_id'])
         emprestimo['emprestimo']['id_usuario'] = str(emprestimo['emprestimo']['id_usuario'])
         emprestimo['emprestimo']['id_bike'] = str(emprestimo['_id'])
-        return jsonify(emprestimo['emprestimo'])
+        return jsonify(emprestimo['emprestimo']), 200
     except InvalidId:
         return jsonify({ 'mensagem': 'ID inválido' }), 400
     except Exception as error:
