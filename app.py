@@ -361,7 +361,7 @@ def deletar_emprestimo(id_emprestimo):
         bike['status'] = 'disponivel'
         bike.pop('emprestimo')
         for i, emp in enumerate(usuario['emprestimos']):
-            if emp == id_emprestimo:
+            if emp == str(id_emprestimo):
                 usuario['emprestimos'].pop(i)
                 break
 
