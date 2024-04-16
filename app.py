@@ -364,7 +364,7 @@ def deletar_emprestimo(id_emprestimo):
             if emp == str(id_emprestimo):
                 usuario['emprestimos'].pop(i)
                 break
-
+        print(bike, usuario)
         mongo.db.bicicletas.update_one({ '_id': id_bike }, { '$set': bike })
         mongo.db.usuarios.update_one({ '_id': id_usuario }, { '$set': usuario })
         return jsonify({}), 204
