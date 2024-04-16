@@ -46,11 +46,11 @@ def criar_usuario():
         cpf = data.get('cpf', None)
         data_nascimento = data.get('data_nascimento', None)
 
-        if not nome:
+        if not nome or nome == '':
             return jsonify({'mensagem': 'Nome é obrigatório'}), 400
         if not cpf or cpf == '':
             return jsonify({'mensagem': 'CPF é obrigatório'}), 400
-        if not data_nascimento:
+        if not data_nascimento or data_nascimento == '':
             return jsonify({'mensagem': 'Data de nascimento é obrigatório'}), 400
         
         usuario = mongo.db.usuarios.find_one({ 'cpf': cpf })
@@ -161,11 +161,11 @@ def criar_bike():
         cidade = data.get('cidade', None)
         status = data.get('status', 'disponivel')
 
-        if not marca:
+        if not marca or marca == '':
             return jsonify({ 'mensagem': 'Marca é obrigatório' }), 400
-        if not modelo:
+        if not modelo or modelo == '':
             return jsonify({ 'mensagem': 'Modelo é obrigatório' }), 400
-        if not cidade:
+        if not cidade or cidade == '':
             return jsonify({ 'mensagem': 'Cidade é obrigatório' }), 400
         
         bike = {
@@ -275,9 +275,9 @@ def criar_emprestimo():
         id_bike = data.get('id_bike', None)
         data_emprestimo = data.get('data_emprestimo', datetime.date.today().strftime('%d/%m/%Y'))
 
-        if not id_usuario:
+        if not id_usuario or id_usuario == '':
             return jsonify({ 'mensagem': 'ID do usuário é obrigatório' }), 400
-        if not id_bike:
+        if not id_bike or id_bike == '':
             return jsonify({ 'mensagem': 'ID da bicicleta é obrigatório' }), 400
         
         id_usuario = ObjectId(id_usuario)
@@ -370,5 +370,5 @@ def deletar_emprestimo(id_emprestimo):
         return jsonify({ 'mensagem': 'Erro interno ao deletar empréstimo' }), 500
 
 if __name__ == '__main__':
-    # criar_tabels()
+    criar_tabels()
     app.run(debug=True)
