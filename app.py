@@ -359,10 +359,10 @@ def deletar_emprestimo(id_emprestimo):
             return jsonify({ 'mensagem': 'Bicicleta não encontrada' }), 404
         
         bike['status'] = 'disponivel'
-        del bike['emprestimo']
+        bike.pop('emprestimo')
         for index, emp in enumerate(usuario['emprestimos']):
             if emp == str(id_emprestimo):
-                del usuario['emprestimos'][str(id_emprestimo)]
+                usuario['emprestimos'].pop(index)
                 break
 
         mongo.db.bicicletas.update_one({ '_id': id_bike }, { '$set': bike })
