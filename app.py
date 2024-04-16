@@ -362,7 +362,7 @@ def deletar_emprestimo(id_emprestimo):
         del bike['emprestimo']
         for index, emp in enumerate(usuario['emprestimos']):
             if emp == str(id_emprestimo):
-                del usuario['emprestimos'][index]
+                del usuario['emprestimos'][str(id_emprestimo)]
                 break
 
         mongo.db.bicicletas.update_one({ '_id': id_bike }, { '$set': bike })
