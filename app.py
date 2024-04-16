@@ -4,12 +4,13 @@ from urllib.parse import quote_plus
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 import datetime
+import os
 
 app = Flask(__name__) 
 
-username = quote_plus("flameevolved")
-password = quote_plus("FlameEvolved080904@")
-db_name = "aps_5"
+username = quote_plus(os.getenv('APS5_USERNAME'))
+password = quote_plus(os.getenv('APS5_PASSWORD'))
+db_name = os.getenv('APS5_DBNAME')
 app.config["MONGO_URI"] = f"mongodb+srv://{username}:{password}@feijonts.qln5llq.mongodb.net/{db_name}"
 mongo = PyMongo(app)
 
@@ -369,5 +370,5 @@ def deletar_emprestimo(id_emprestimo):
         return jsonify({ 'mensagem': 'Erro interno ao deletar empréstimo' }), 500
 
 if __name__ == '__main__':
-    criar_tabels()
+    # criar_tabels()
     app.run(debug=True)
