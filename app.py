@@ -343,21 +343,36 @@ def buscar_emprestimo(id_emprestimo):
 def deletar_emprestimo(id_emprestimo):
     try:
         id_emprestimo = ObjectId(id_emprestimo)
-        bicicleta = mongo.db.bicicletas.find_one({'emprestimo._id': id_emprestimo})
-        if not bicicleta or 'emprestimo' not in bicicleta:
-            return jsonify({'mensagem': 'Empréstimo não encontrado'}), 404
+        emprestimo = mongo.db.bicicletas.find_one({ 'emprestimo._id': id_emprestimo })
+        if not emprestimo:
+            return jsonify({ 'mensagem': 'Empréstimo não encontrado' }), 404
+        
+        id_usuario = emprestimo['emprestimo']['id_usuario']
+        id_bike = emprestimo['_id']
 
-        id_usuario = bicicleta['emprestimo']['id_usuario']
+        usuario = mongo.db.usuarios.find_one({ '_id': id_usuario })
+        if not usuario:
+            return jsonify({ 'mensagem': 'Usuário não encontrado' }), 404
+        
+        bike = mongo.db.bicicletas.find_one({ '_id': id_bike })
+        if not bike:
+            return jsonify({ 'mensagem': 'Bicicleta não encontrada' }), 404
+        
+        bike['status'] = 'disponivel'
+        bike.pop('emprestimo')
+        for i, emp in enumerate(usuario['emprestimos']):
+            if emp == id_emprestimo:
+                usuario['emprestimos'].pop(i)
+                break
 
-        mongo.db.bicicletas.update_one({'_id': bicicleta['_id']}, {'$set': {'status': 'disponivel'}, '$unset': {'emprestimo': ''}})
-        mongo.db.usuarios.update_one({'_id': id_usuario}, {'$pull': {'emprestimos': id_emprestimo}})
-
+        mongo.db.bicicletas.update_one({ '_id': id_bike }, { '$set': bike })
+        mongo.db.usuarios.update_one({ '_id': id_usuario }, { '$set': usuario })
         return jsonify({}), 204
     except InvalidId:
-        return jsonify({'mensagem': 'ID inválido'}), 400
+        return jsonify({ 'mensagem': 'ID inválido' }), 400
     except Exception as error:
         print(error)
-        return jsonify({'mensagem': 'Erro interno ao deletar empréstimo'}), 500
+        return jsonify({ 'mensagem': 'Erro interno ao deletar empréstimo' }), 500
 
 if __name__ == '__main__':
     criar_tabels()
