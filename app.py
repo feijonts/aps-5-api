@@ -8,10 +8,7 @@ import os
 
 app = Flask(__name__) 
 
-username = quote_plus(os.environ['APS5_USERNAME'])
-password = quote_plus(os.environ['APS5_PASSWORD'])
-db_name = os.environ['APS5_DBNAME']
-app.config["MONGO_URI"] = f"mongodb+srv://{username}:{password}@feijonts.qln5llq.mongodb.net/{db_name}"
+app.config["MONGO_URI"] = f"mongodb+srv://admin:admin@admin.zwhdhpd.mongodb.net/aps5?retryWrites=true&w=majority&appName=admin"
 mongo = PyMongo(app)
 
 def criar_tabels():
